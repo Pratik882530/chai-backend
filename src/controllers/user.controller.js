@@ -16,7 +16,7 @@ if (
     throw new ApiError(400,"all fields are required")
 }
 
-const existedUser = User.findOne({
+const existedUser = await User.findOne({
     $or: [{userName},{email}]
 })
 
@@ -25,24 +25,36 @@ if (existedUser) {
 }
 
  const avatarLocalPath = req.files?.avatar[0]?.path;
- const coverImageLocalPath = req.files?.coverImage[0]?.path;
+//  const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
  if (!avatarLocalPath) {
     throw new ApiError(400,"avatar is required")
  }
 
 const avatar = await uploadOnCloudinary(avatarLocalPath)
-const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+// const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
 
 if (!avatar) {
     throw new ApiError(400,"avatar is required")
     
 }
 
+   // Check for cover image (optional)
+   let coverImageUrl = "";
+   if (req.files?.coverImage?.[0]?.path) {
+       const coverImage = await uploadOnCloudinary(req.files.coverImage[0].path);
+       if (coverImage) {
+           coverImageUrl = coverImage.url;
+       }
+   }
+
+
  const user = await User.create({
     fullName,
     avatar: avatar.url,
-    coverImage: coverImage?.url || "",
+    coverImage: coverImageUrl,
     email,
     password,
     userName: userName.toLowerCase()
@@ -60,7 +72,7 @@ if (!avatar) {
  }
 
  return res.status(201).json(
-    ApiResponse(200,createdUser,"User registerd successfully")
+   new ApiResponse(200,createdUser,"User registerd successfully")
  )
 
 })
